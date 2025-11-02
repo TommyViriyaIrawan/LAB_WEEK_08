@@ -17,7 +17,9 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.Data
 import com.example.lab_week_08.worker.FirstWorker
 import com.example.lab_week_08.worker.SecondWorker
+import com.example.lab_week_08.worker.ThirdWorker
 import android.content.Intent
+import com.example.lab_week_08.SecondNotificationService
 import com.example.lab_week_08.NotificationService.Companion.EXTRA_ID
 
 
@@ -68,10 +70,18 @@ class MainActivity : AppCompatActivity() {
             .setInputData(getIdInputData(SecondWorker.INPUT_DATA_ID, id))
             .build()
 
+        val thirdRequest = OneTimeWorkRequest.Builder(ThirdWorker::class.java)
+            .setConstraints(networkConstraints)
+            .setInputData(getIdInputData(ThirdWorker.INPUT_DATA_ID, id))
+            .build()
+
+
         // ✅ Execute workers in sequence
         workManager.beginWith(firstRequest)
             .then(secondRequest)
+            .then(thirdRequest)
             .enqueue()
+
 
         // ✅ Observe FirstWorker
         workManager.getWorkInfoByIdLiveData(firstRequest.id)
@@ -86,9 +96,18 @@ class MainActivity : AppCompatActivity() {
             .observe(this) { info ->
                 if (info.state.isFinished) {
                     showResult("Second process is done")
-                    launchNotificationService()   // ✅ Wajib sesuai instruksi
+                    launchNotificationService()
                 }
             }
+
+        workManager.getWorkInfoByIdLiveData(thirdRequest.id)
+            .observe(this) { info ->
+                if (info.state.isFinished) {
+                    showResult("Third process is done")
+                    launchSecondNotificationService()
+                }
+            }
+
     }
 
 
@@ -116,6 +135,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         ContextCompat.startForegroundService(this, serviceIntent)
+    }
+
+    private fun launchSecondNotificationService() {
+        val intent = Intent(this, SecondNotificationService::class.java)
+        ContextCompat.startForegroundService(this, intent)
     }
 
 
